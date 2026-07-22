@@ -4,7 +4,7 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#08151e"><title>PokéMap Antwerp</title>
   <link rel="preconnect" href="https://unpkg.com"><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=20260722-8">
+  <link rel="stylesheet" href="styles.css?v=20260722-9">
 </head>
 <body>
   <header><a class="brand" href="#"><span class="ball">●</span><span>PokéMap <small>Antwerp community</small></span></a><nav class="modes" aria-label="Map mode"><button class="active" data-mode="research">Field Research</button><button data-mode="planner">S2 Planner</button></nav><button id="progressButton" class="progress-pill">Today · 0 stops</button></header>
@@ -19,11 +19,12 @@
     </aside>
     <div id="map" aria-label="Community map"></div>
     <div class="map-tools"><button id="locate" title="Locate me">⌖</button><button id="questFilterButton" title="Filter reported quests" aria-label="Filter reported quests"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.3 7.2v5.3l-3.4 1.8v-7.1L4 5Z"/></svg></button></div>
+    <div id="locationWarning" class="warning location-warning hidden" role="status">Your location is outside the supported 15 km area around Boekenbergpark.</div>
     <div id="warning" class="warning hidden"></div>
   </main>
   <div id="sheetBackdrop" class="backdrop hidden"></div><section id="sheet" class="sheet" aria-live="polite"><div class="handle"></div><div id="sheetContent"></div></section>
   <dialog id="reportDialog"><form method="dialog"><button class="close" value="cancel" formnovalidate aria-label="Close report">×</button><h2>Report Field Research</h2><p id="reportStop"></p><label>Task<select id="taskSelect" required></select></label><label>Reward<select id="rewardSelect" required></select></label><div id="turnstileContainer" class="turnstile-container hidden"></div><div class="dialog-actions"><button value="cancel" formnovalidate class="secondary">Cancel</button><button id="submitReport" value="default" class="primary">Submit report</button></div></form></dialog>
   <dialog id="questFilterDialog"><form method="dialog"><button class="close" value="cancel" aria-label="Close filters">×</button><h2>Quest reward filters</h2><p>Select rewards, then expand them to choose potential tasks.</p><input id="questFilterSearch" class="filter-search" type="search" placeholder="Search rewards or tasks" autocomplete="off"><label class="filter-unreported"><input id="showUnreported" type="checkbox"> Show unreported PokéStops</label><div id="questFilterOptions" class="quest-filter-options"></div><div class="dialog-actions"><button id="showAllQuests" type="button" class="secondary">Show all</button><button value="default" class="primary">Done</button></div></form></dialog>
   <div id="toast" role="status"></div>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script src="https://cdn.jsdelivr.net/npm/long@3.2.0/dist/long.min.js"></script><script src="https://cdn.jsdelivr.net/npm/s2-geometry@1.2.10/src/s2geometry.js"></script><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script><script src="config.js?v=20260722-8"></script><script src="app.js?v=20260722-8"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script src="https://cdn.jsdelivr.net/npm/long@3.2.0/dist/long.min.js"></script><script src="https://cdn.jsdelivr.net/npm/s2-geometry@1.2.10/src/s2geometry.js"></script><script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script><script src="config.js?v=20260722-9"></script><script src="app.js?v=20260722-9"></script>
 </body></html>
