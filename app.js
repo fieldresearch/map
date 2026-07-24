@@ -2,7 +2,8 @@
   "use strict";
   const API=(window.POKEMAP_CONFIG?.apiBase||"").replace(/\/$/,"");
   const CONFIG=window.POKEMAP_CONFIG||{};
-  const GEOFENCE={latitude:Number(CONFIG.geofence?.latitude),longitude:Number(CONFIG.geofence?.longitude),radiusKm:Number(CONFIG.geofence?.radiusKm)};
+  const ACCESS_KEY=new URLSearchParams(location.hash.slice(1)).get("access")||"";
+  const GEOFENCE={enabled:CONFIG.geofence?.enabled!==false&&!ACCESS_KEY,latitude:Number(CONFIG.geofence?.latitude),longitude:Number(CONFIG.geofence?.longitude),radiusKm:Number(CONFIG.geofence?.radiusKm)};
   const REPORTER_ID=loadReporterId();
   const REPORT_API=(CONFIG.reportApiBase||API).replace(/\/$/,"");
   const UNKNOWN_ENCOUNTER={id:"unknown-encounter",label:"Unknown encounter",type:"ENCOUNTER",image:"https://cdn.discordapp.com/emojis/1321211297668268063.webp?size=96"};
@@ -13,23 +14,23 @@
   const savedView=loadSavedView();
   const latitudeSpan=GEOFENCE.radiusKm/111.32,longitudeSpan=GEOFENCE.radiusKm/(111.32*Math.cos(GEOFENCE.latitude*Math.PI/180));
   const communityBounds=L.latLngBounds([GEOFENCE.latitude-latitudeSpan,GEOFENCE.longitude-longitudeSpan],[GEOFENCE.latitude+latitudeSpan,GEOFENCE.longitude+longitudeSpan]);
-  const map=L.map("map",{zoomControl:false,minZoom:11,maxZoom:19,maxBounds:communityBounds,maxBoundsViscosity:1}).setView([savedView.latitude,savedView.longitude],savedView.zoom);
+  const map=L.map("map",{zoomControl:false,minZoom:11,maxZoom:19,...(GEOFENCE.enabled?{maxBounds:communityBounds,maxBoundsViscosity:1}:{})}).setView([savedView.latitude,savedView.longitude],savedView.zoom);
   map.createPane("interactionRanges");map.getPane("interactionRanges").style.zIndex="425";map.getPane("interactionRanges").style.pointerEvents="none";map.getPane("interactionRanges").classList.add("leaflet-interaction-pane");
   map.createPane("s2Labels");map.getPane("s2Labels").style.zIndex="450";
   L.control.zoom({position:"bottomright"}).addTo(map);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
-  L.circle([GEOFENCE.latitude,GEOFENCE.longitude],{radius:GEOFENCE.radiusKm*1000,color:"#52e0a4",weight:2,opacity:.75,fill:false,interactive:false}).addTo(map);
+  if(GEOFENCE.enabled)L.circle([GEOFENCE.latitude,GEOFENCE.longitude],{radius:GEOFENCE.radiusKm*1000,color:"#52e0a4",weight:2,opacity:.75,fill:false,interactive:false}).addTo(map);
   const poiLayer=L.layerGroup(),radiusLayer=L.layerGroup(),interactionLayer=L.layerGroup(),cells17=L.layerGroup(),cells14=L.layerGroup(),locationLayer=L.layerGroup(),cellRenderer=L.canvas({padding:.5}),interactionRenderer=L.canvas({padding:.5,pane:"interactionRanges"});
   map.addLayer(radiusLayer);map.addLayer(cells17);map.addLayer(cells14);map.addLayer(interactionLayer);map.addLayer(poiLayer);map.addLayer(locationLayer);
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
   const escape=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const api=async(path,options={})=>{const r=await fetch(API+path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});if(!r.ok){let m=`Request failed (${r.status})`;try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r.status===204?null:r.json()};
-  const reportApi=async(path,options={})=>{const r=await fetch(REPORT_API+path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});if(!r.ok){let m=`Request failed (${r.status})`;try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r.status===204?null:r.json()};
+  const reportApi=async(path,options={})=>{const r=await fetch(REPORT_API+path,{...options,headers:{"Content-Type":"application/json",...(ACCESS_KEY?{"X-Geofence-Bypass":ACCESS_KEY}:{}),...(options.headers||{})}});if(!r.ok){let m=`Request failed (${r.status})`;try{m=(await r.json()).error||m}catch{}throw new Error(m)}return r.status===204?null:r.json()};
   function loadSavedView(){try{const view=JSON.parse(localStorage.getItem("pokemap-view-v1"));if(Number.isFinite(view?.latitude)&&Number.isFinite(view?.longitude)&&Number.isInteger(view?.zoom)&&view.zoom>=11&&view.zoom<=19&&withinGeofence(view.latitude,view.longitude))return view}catch{}return{latitude:GEOFENCE.latitude,longitude:GEOFENCE.longitude,zoom:14}}
   function saveView(){try{const center=map.getCenter();localStorage.setItem("pokemap-view-v1",JSON.stringify({latitude:center.lat,longitude:center.lng,zoom:map.getZoom()}))}catch{}}
   function loadReporterId(){try{const saved=localStorage.getItem("pokemap-reporter-id-v1");if(/^[A-Za-z0-9_-]{20,100}$/.test(saved||""))return saved;const created=crypto.randomUUID?.()||[...crypto.getRandomValues(new Uint8Array(24))].map(value=>value.toString(16).padStart(2,"0")).join("");localStorage.setItem("pokemap-reporter-id-v1",created);return created}catch{return `session-${Date.now()}-${Math.random().toString(36).slice(2)}`}}
   function distanceKm(latitude,longitude){const radians=value=>value*Math.PI/180,latitudeDelta=radians(latitude-GEOFENCE.latitude),longitudeDelta=radians(longitude-GEOFENCE.longitude),a=Math.sin(latitudeDelta/2)**2+Math.cos(radians(GEOFENCE.latitude))*Math.cos(radians(latitude))*Math.sin(longitudeDelta/2)**2;return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))}
-  function withinGeofence(latitude,longitude){return Number.isFinite(latitude)&&Number.isFinite(longitude)&&distanceKm(latitude,longitude)<=GEOFENCE.radiusKm}
+  function withinGeofence(latitude,longitude){return Number.isFinite(latitude)&&Number.isFinite(longitude)&&(!GEOFENCE.enabled||distanceKm(latitude,longitude)<=GEOFENCE.radiusKm)}
   function loadQuestFilter(){try{const saved=JSON.parse(localStorage.getItem("pokemap-quest-filter-v1"));if(saved&&Array.isArray(saved.selected))return{active:Boolean(saved.active),selected:new Set(saved.selected.map(String)),showUnreported:saved.showUnreported!==false}}catch{}return{active:false,selected:new Set(),showUnreported:true}}
   function saveQuestFilter(){try{localStorage.setItem("pokemap-quest-filter-v1",JSON.stringify({active:state.questFilter.active,selected:[...state.questFilter.selected],showUnreported:state.questFilter.showUnreported}))}catch{}}
   function localDayKey(){const now=new Date();return`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`}
